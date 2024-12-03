@@ -92,12 +92,28 @@ docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comme
 # Migrate data
 echo "Migrating data..."
 tutor local run lms sh -c "./manage.py lms makemigrations"
+
+# Disable foreign key checks
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=0;\""
+
+# First, fake the content_type_gating migration
+echo "Faking content_type_gating migration..."
+tutor local run lms sh -c "./manage.py lms migrate content_type_gating --fake"
+tutor local run lms sh -c "./manage.py lms migrate course_duration_limits --fake"
+
+# Then run all migrations
+echo "Running remaining migrations..."
 tutor local run lms sh -c "./manage.py lms migrate"
+
+# Re-enable foreign key checks
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=1;\""
 
 # Run additional CMS commands
 echo "Running CMS commands..."
 tutor local run cms sh -c "./manage.py cms reindex_course --all"
+tutor local run cms sh -c "./manage.py cms backfill_course_outlines"
 tutor local run cms sh -c "./manage.py cms simulate_publish"
+tutor local run cms sh -c "./manage.py cms generate_course_overview --all-courses"
 
 # Cleanup MongoDB backup directory
 echo "Cleaning up MongoDB backup directory..."

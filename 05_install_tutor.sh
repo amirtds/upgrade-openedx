@@ -28,6 +28,57 @@ declare -A VERSION_MAP=(
     ["redwood"]="18.1.4"
 )
 
+# Function to clean up Docker resources
+cleanup_docker() {
+    echo -e "\n\033[1;33m=== CLEANING UP DOCKER RESOURCES ===\033[0m"
+    
+    # Stop all running containers
+    echo -e "\n\033[1;34m>>> Stopping all Docker containers...\033[0m"
+    if [ "$(docker ps -q)" ]; then
+        docker stop $(docker ps -q)
+    else
+        echo "No running containers found."
+    fi
+
+    # Remove all containers
+    echo -e "\n\033[1;34m>>> Removing all Docker containers...\033[0m"
+    if [ "$(docker ps -a -q)" ]; then
+        docker rm -f $(docker ps -a -q)
+    else
+        echo "No containers found."
+    fi
+
+    # Remove all volumes
+    echo -e "\n\033[1;34m>>> Removing all Docker volumes...\033[0m"
+    if [ "$(docker volume ls -q)" ]; then
+        docker volume rm -f $(docker volume ls -q)
+    else
+        echo "No volumes found."
+    fi
+
+    # Remove all networks (except default ones)
+    echo -e "\n\033[1;34m>>> Removing all custom Docker networks...\033[0m"
+    if [ "$(docker network ls --filter type=custom -q)" ]; then
+        docker network rm $(docker network ls --filter type=custom -q)
+    else
+        echo "No custom networks found."
+    fi
+
+    # Remove all images
+    echo -e "\n\033[1;34m>>> Removing all Docker images...\033[0m"
+    if [ "$(docker images -q)" ]; then
+        docker rmi -f $(docker images -q)
+    else
+        echo "No images found."
+    fi
+
+    # Prune system
+    echo -e "\n\033[1;34m>>> Pruning Docker system...\033[0m"
+    docker system prune -af --volumes
+
+    echo -e "\n\033[1;32m=== DOCKER CLEANUP COMPLETED ===\033[0m\n"
+}
+
 # Check if tvm is installed
 check_tvm() {
     if ! command -v tvm &> /dev/null; then
@@ -51,6 +102,9 @@ display_versions() {
 
 # Main installation process
 main() {
+    # Clean up Docker resources first
+    cleanup_docker
+
     check_tvm
 
     # Display versions and get user selection

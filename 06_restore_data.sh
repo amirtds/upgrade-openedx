@@ -62,16 +62,6 @@ if [[ $confirm != [yY] ]]; then
     exit 1
 fi
 
-# Drop old/vanilla MySQL database
-echo "Dropping old MySQL database..."
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
-
-# Restore MySQL backup with foreign key checks disabled
-echo "Restoring MySQL backup..."
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=0;\""
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$MYSQL_DUMP_FILE"
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=1;\""
-
 # Copy MongoDB backup
 echo "Copying MongoDB backup..."
 MONGO_BACKUP_DIR="$LOCAL_TUTOR_DATA_DIRECTORY/mongodb/backup/"
@@ -82,12 +72,23 @@ if [ ! -d "$MONGO_BACKUP_DIR" ]; then
     sudo mkdir -p "$MONGO_BACKUP_DIR"
 fi
 
-sudo cp -R "$MONGO_DUMP_DIR" "$MONGO_BACKUP_DIR"
+sudo cp -R "$MONGO_DUMP_DIR"/* "$MONGO_BACKUP_DIR"
 
 # Restore MongoDB backups for openedx and cs_comments_service databases
 echo "Restoring MongoDB backups..."
 docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/openedx/'
 docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
+
+# Drop old/vanilla MySQL database
+echo "Dropping old MySQL database..."
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
+
+# Restore MySQL backup with foreign key checks disabled
+echo "Restoring MySQL backup..."
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=0;\""
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$MYSQL_DUMP_FILE"
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=1;\""
+
 
 # Migrate data
 echo "Migrating data..."

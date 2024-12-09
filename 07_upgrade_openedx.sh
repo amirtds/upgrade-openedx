@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Define OpenEdX versions and their corresponding Tutor versions (same as in 05_install_tutor.sh)
+# Define OpenEdX versions and their corresponding Tutor versions
 ORDERED_VERSIONS=(
     "ironwood"
     "juniper"
@@ -61,64 +61,84 @@ get_next_version() {
 
 # Function to upgrade to next version
 upgrade_to_version() {
-    local from_version=$1
-    local to_version=$2
-    local tutor_version=${VERSION_MAP[$to_version]}
+    local current_version=$1
+    local target_version=$2
+    local tutor_version=${VERSION_MAP[$target_version]}
     
-    echo "Upgrading from $from_version to $to_version (Tutor v$tutor_version)"
+    echo -e "\n\033[1;34m>>> Upgrading from $current_version to $target_version using TVM...\033[0m"
     
-    # Install specific Tutor version using TVM
-    echo "Installing Tutor v$tutor_version..."
+    # Create backup first
+    BACKUP_DIR="backup_${current_version}_$(date +%Y%m%d_%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+    
+    # Backup existing data
+    echo "Creating backup..."
+    tutor local exec mysql mysqldump -u root --password="$(tutor config printvalue MYSQL_ROOT_PASSWORD)" openedx > "$BACKUP_DIR/mysql_backup.sql"
+    tutor local exec mongodb mongodump --out=/data/db/backup/
+    docker cp tutor_local_mongodb_1:/data/db/backup/. "$BACKUP_DIR/mongodb/"
+    cp config.yml "$BACKUP_DIR/config.yml"
+
+    # Stop and remove current containers
+    echo "Stopping and removing current containers..."
+    tutor local stop
+    tutor local dc down -v   # Remove volumes but keep data
+    docker system prune -f    # Clean up unused images
+
+    # Install new Tutor version using TVM
+    echo "Installing Tutor version v$tutor_version..."
     tvm install "v$tutor_version"
     if [ $? -ne 0 ]; then
         echo "Failed to install Tutor version $tutor_version"
         exit 1
     fi
 
-    # Initialize project
-    echo "Initializing project for $to_version..."
-    tvm project init "$to_version" "v$tutor_version"
+    # Use the new version
+    echo "Switching to Tutor version v$tutor_version..."
+    tvm use "v$tutor_version"
     if [ $? -ne 0 ]; then
-        echo "Failed to initialize project"
+        echo "Failed to switch to Tutor version $tutor_version"
         exit 1
     fi
 
-    # Change directory and activate virtual environment
-    cd "$to_version" || exit 1
-    source .tvm/bin/activate
-
-    # Run upgrade command if not the first version
-    if [ -n "$from_version" ]; then
-        echo "Running upgrade from $from_version..."
-        tutor local upgrade --from="$from_version"
+    # Pull new images
+    echo "Pulling new Docker images..."
+    tutor images pull
+    if [ $? -ne 0 ]; then
+        echo "Failed to pull new Docker images"
+        exit 1
     fi
 
-    # Run appropriate launch command based on version
-    echo "Launching Tutor..."
+    # Run upgrade
+    echo "Running upgrade process..."
+    tutor config save
+    tutor local upgrade --from "$current_version"
+    
+    # Launch services based on version
+    echo "Launching Tutor with new version..."
     if (( $(echo "$tutor_version" | cut -d. -f1) >= 15 )); then
+        echo "Running tutor local launch -I"
         tutor local launch -I
     else
+        echo "Running tutor local quickstart -I"
         tutor local quickstart -I
     fi
 
-    # Run additional CMS commands
-    echo "Running CMS commands..."
-    tutor local run cms sh -c "./manage.py cms reindex_course --all"
-    tutor local run cms sh -c "./manage.py cms backfill_course_outlines"
-    tutor local run cms sh -c "./manage.py cms simulate_publish"
-    tutor local run cms sh -c "./manage.py cms generate_course_overview --all-courses"
+    # Verify new versions
+    echo -e "\n\033[1;36m=== Verifying Docker containers versions ===\033[0m"
+    docker ps | grep "openedx"
 
-    echo "Upgrade to $to_version completed successfully!"
+    echo -e "\033[1;32m>>> Successfully upgraded to $target_version\033[0m"
+    echo -e "\033[1;33mBackup saved in: $BACKUP_DIR\033[0m"
 }
 
 # Main upgrade process
 main() {
     # Get current version
     current_version=$(get_current_version)
-    echo "Current version: $current_version"
+    echo -e "\n\033[1;36m=== CURRENT VERSION: $current_version ===\033[0m"
 
-    # Get target version
-    echo "Available target versions:"
+    # Display available versions
+    echo -e "\n\033[1;36m=== AVAILABLE TARGET VERSIONS: ===\033[0m"
     local start_listing=false
     for i in "${!ORDERED_VERSIONS[@]}"; do
         version=${ORDERED_VERSIONS[$i]}
@@ -127,14 +147,14 @@ main() {
             continue
         fi
         if [ "$start_listing" = true ]; then
-            echo "$((i+1))) $version (Tutor v${VERSION_MAP[$version]})"
+            echo -e "\033[1;36m$((i+1))) $version (Tutor v${VERSION_MAP[$version]})\033[0m"
         fi
     done
 
-    read -p "Select target version (enter number or 'all' for step-by-step upgrade): " selection
+    read -p $'\n\033[1;33mSelect target version (enter number or "all" for step-by-step upgrade): \033[0m' selection
 
     if [ "$selection" = "all" ]; then
-        # Perform step-by-step upgrade
+        echo -e "\n\033[1;34m>>> Starting step-by-step upgrade process...\033[0m"
         while true; do
             next_version=$(get_next_version "$current_version")
             if [ -z "$next_version" ]; then
@@ -145,9 +165,9 @@ main() {
             current_version=$next_version
         done
     else
-        # Upgrade to specific version
         if [[ "$selection" =~ ^[0-9]+$ ]]; then
             target_version=${ORDERED_VERSIONS[$((selection-1))]}
+            echo -e "\n\033[1;34m>>> Starting upgrade process to $target_version...\033[0m"
             while [ "$current_version" != "$target_version" ]; do
                 next_version=$(get_next_version "$current_version")
                 if [ -z "$next_version" ]; then
@@ -157,7 +177,7 @@ main() {
                 current_version=$next_version
             done
         else
-            echo "Invalid selection"
+            echo -e "\n\033[1;31m!!! Invalid selection\033[0m"
             exit 1
         fi
     fi
@@ -166,4 +186,4 @@ main() {
 # Execute main function
 main
 
-echo "Upgrade process completed successfully!"
+echo -e "\n\033[1;32m=== UPGRADE PROCESS COMPLETED SUCCESSFULLY! ===\033[0m\n"

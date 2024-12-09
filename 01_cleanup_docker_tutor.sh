@@ -26,25 +26,3 @@ fi
 if [ "$(docker volume ls -q)" ]; then
   docker volume rm $(docker volume ls -q)
 fi
-
-
-
-# Install Open edX Ironwood
-tvm install v3.12.6
-tvm project init ironwood v3.12.6
-cd ironwood
-source .tvm/bin/activate
-tutor local quickstart -I
-
-# wait until it is done 
-# I, [2024-12-03T00:48:12.407079 #32]  INFO -- : Alias [content] now points to index [content_20241203004812209].
-# I, [2024-12-03T00:48:12.419250 #32]  INFO -- : Catch up from 2024-12-03 00:43:12 UTC complete.
-# I, [2024-12-03T00:48:12.419345 #32]  INFO -- : Rebuild index complete.
-# All services initialised.
-# The Open edX platform is now running in detached mode
-# Your Open edX platform is ready and can be accessed at the following urls:
-
-#     http://localhost
-#     http://studio.localhost
-#     http://www.myopenedx.com
-#     http://studio.www.myopenedx.com

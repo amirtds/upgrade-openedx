@@ -1,0 +1,32 @@
+All Rights Reserved
+
+Copyright (c) 2024
+
+This software and associated documentation files (the "Software") are proprietary and confidential.
+No part of this Software may be reproduced, distributed, or transmitted in any form or by any
+means, including photocopying, recording, or other electronic or mechanical methods, without the
+prior written permission of the copyright holder.
+
+DISCLAIMER AND LIMITATION OF LIABILITY:
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. 
+THE AUTHORS OR COPYRIGHT HOLDERS SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+OR IN CONNECTION WITH THE SOFTWARE OR THE USE, MISUSE, OR INABILITY TO USE THE SOFTWARE,
+INCLUDING BUT NOT LIMITED TO ANY DATA LOSS, DATA CORRUPTION, SERVER DOWNTIME, OR 
+BUSINESS INTERRUPTION.
+
+USE AT YOUR OWN RISK:
+This software performs database migrations and data transformations. The user assumes
+all responsibility for:
+1. Backing up all data before using this software
+2. Testing the migration process in a non-production environment first
+3. Any data loss or corruption that may occur during the migration process
+4. Verifying the integrity and completeness of migrated data
+
+NO SUPPORT GUARANTEE:
+The authors are not obligated to provide any support, updates, or fixes for issues
+that may arise from using this software.
+
+Unauthorized use, reproduction, or distribution of this Software may result in severe
+civil and criminal penalties, and will be prosecuted to the maximum extent possible
+under the law.

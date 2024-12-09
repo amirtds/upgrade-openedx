@@ -83,36 +83,26 @@ docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comme
 echo "Dropping old MySQL database..."
 docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
 
-# Restore MySQL backup with foreign key checks disabled
+# First restore the backup (this brings in all the base tables and data)
 echo "Restoring MySQL backup..."
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=0;\""
 docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$MYSQL_DUMP_FILE"
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=1;\""
+
+# Run fake migrations for problematic apps
+echo "Running fake migrations for specific apps..."
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0001 --fake"
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0003 --fake"
+tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0001 --fake"
+tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0003 --fake"
 
 
-# Migrate data
-echo "Migrating data..."
-tutor local run lms sh -c "./manage.py lms makemigrations"
-
-# Disable foreign key checks
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=0;\""
-
-# First, fake the content_type_gating migration
-echo "Faking content_type_gating migration..."
-tutor local run lms sh -c "./manage.py lms migrate content_type_gating --fake"
-tutor local run lms sh -c "./manage.py lms migrate course_duration_limits --fake"
-
-# Then run all migrations
+# Finally run all remaining migrations
 echo "Running remaining migrations..."
-tutor local run lms sh -c "./manage.py lms migrate"
-
-# Re-enable foreign key checks
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"SET FOREIGN_KEY_CHECKS=1;\""
+tutor local run lms sh -c "python manage.py lms migrate"
+tutor local run cms sh -c "python manage.py cms migrate"
 
 # Run additional CMS commands
 echo "Running CMS commands..."
 tutor local run cms sh -c "./manage.py cms reindex_course --all"
-tutor local run cms sh -c "./manage.py cms backfill_course_outlines"
 tutor local run cms sh -c "./manage.py cms simulate_publish"
 tutor local run cms sh -c "./manage.py cms generate_course_overview --all-courses"
 

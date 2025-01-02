@@ -87,7 +87,7 @@ verify_mongo_data() {
     if [ "$modulestore_count" -eq "0" ] || [ "$forum_count" -eq "0" ]; then
         echo "Warning: Some MongoDB collections appear to be empty!"
         return 1
-    }
+    fi
     return 0
 }
 

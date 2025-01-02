@@ -35,6 +35,31 @@ install_old_tutor() {
     sudo chmod 0755 /usr/local/bin/tutor
 }
 
+# Function to clean up Docker resources (safely)
+cleanup_docker() {
+    echo -e "\n\033[1;33m=== CLEANING UP DOCKER RESOURCES (SAFELY) ===\033[0m"
+    
+    # Stop all running containers
+    echo -e "\n\033[1;34m>>> Stopping all Docker containers...\033[0m"
+    if [ "$(docker ps -q)" ]; then
+        docker stop $(docker ps -q)
+    fi
+
+    # Remove all containers (but keep volumes!)
+    echo -e "\n\033[1;34m>>> Removing all Docker containers...\033[0m"
+    if [ "$(docker ps -a -q)" ]; then
+        docker rm -f $(docker ps -a -q)
+    fi
+
+    # Remove custom networks (except default ones)
+    echo -e "\n\033[1;34m>>> Removing custom Docker networks...\033[0m"
+    if [ "$(docker network ls --filter type=custom -q)" ]; then
+        docker network rm $(docker network ls --filter type=custom -q)
+    fi
+
+    echo -e "\n\033[1;32m=== DOCKER CLEANUP COMPLETED ===\033[0m\n"
+}
+
 # Function to upgrade to next version
 upgrade_to_version() {
     local current_version=$1
@@ -42,6 +67,10 @@ upgrade_to_version() {
     local tutor_version=${VERSION_MAP[$target_version]}
     
     echo -e "\n\033[1;34m>>> Upgrading from $current_version to $target_version\033[0m"
+    
+    # Stop containers before upgrade
+    echo "Stopping current containers..."
+    tutor local stop
     
     # Install Tutor based on version
     if [ "$target_version" = "juniper" ] || [ "$target_version" = "koa" ]; then

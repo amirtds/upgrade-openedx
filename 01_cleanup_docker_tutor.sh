@@ -26,3 +26,13 @@ fi
 if [ "$(docker volume ls -q)" ]; then
   docker volume rm $(docker volume ls -q)
 fi
+
+## Remove all tutor data
+if [ -d ~/.local/share/tutor ]; then
+  rm -rf ~/.local/share/tutor
+fi
+
+## Remove tutor executable
+if [ -f /usr/local/bin/tutor ]; then
+  rm -f /usr/local/bin/tutor
+fi

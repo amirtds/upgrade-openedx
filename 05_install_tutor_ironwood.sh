@@ -68,7 +68,7 @@ select_file() {
         echo "$i) $file"
         files+=("$file")
         ((i++))
-    done < <(ls *"${extension}" 2>/dev/null)
+    done < <(ls *.${extension} 2>/dev/null)
     
     if [ ${#files[@]} -eq 0 ]; then
         echo "No ${file_type} files found in current directory"
@@ -89,7 +89,7 @@ select_file() {
     return 0
 }
 
-# Function to list and select directories
+# Function to list and select mongo backup directories
 select_directory() {
     local dirs=()
     
@@ -98,7 +98,7 @@ select_directory() {
     # List directories with numbers
     local i=1
     while IFS= read -r dir; do
-        if [ -d "$dir" ]; then
+        if [ -d "$dir" ] && [[ "$dir" == mongo_* ]]; then
             echo "$i) $dir"
             dirs+=("$dir")
             ((i++))
@@ -106,7 +106,7 @@ select_directory() {
     done < <(ls -d */ 2>/dev/null)
     
     if [ ${#dirs[@]} -eq 0 ]; then
-        echo "No directories found in current directory"
+        echo "No MongoDB backup directories (starting with 'mongo_') found in current directory"
         return 1
     fi
     

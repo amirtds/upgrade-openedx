@@ -2,7 +2,6 @@
 
 # Define OpenEdX versions and their corresponding Tutor versions
 ORDERED_VERSIONS=(
-    "ironwood"
     "juniper"
     "koa"
     "lilac"
@@ -15,7 +14,6 @@ ORDERED_VERSIONS=(
 )
 
 declare -A VERSION_MAP=(
-    ["ironwood"]="3.12.6"
     ["juniper"]="10.5.3"
     ["koa"]="11.3.1"
     ["lilac"]="12.2.0"
@@ -26,6 +24,32 @@ declare -A VERSION_MAP=(
     ["quince"]="17.0.6"
     ["redwood"]="18.1.4"
 )
+
+# Function to setup virtual environment
+setup_venv() {
+    echo -e "\n\033[1;34m>>> Setting up virtual environment\033[0m"
+    
+    # Install python3-venv if not already installed
+    if ! dpkg -l | grep -q python3-venv; then
+        echo "Installing python3-venv..."
+        sudo apt-get update
+        sudo apt-get install -y python3-venv
+    fi
+    
+    # Create virtual environment if it doesn't exist
+    if [ ! -d "tutor-venv" ]; then
+        echo "Creating virtual environment..."
+        python3 -m venv tutor-venv
+    fi
+    
+    # Activate virtual environment
+    echo "Activating virtual environment..."
+    source tutor-venv/bin/activate
+    
+    # Upgrade pip
+    echo "Upgrading pip..."
+    pip install --upgrade pip
+}
 
 # Function to upgrade to next version
 upgrade_to_version() {
@@ -72,13 +96,19 @@ upgrade_to_version() {
 
 # Main upgrade process
 main() {
-    local current_version="hawthorn"
+    # Setup virtual environment
+    setup_venv
+    
+    local current_version="ironwood"
     
     for next_version in "${ORDERED_VERSIONS[@]}"; do
         echo -e "\n\033[1;35m=== Starting upgrade to $next_version ===\033[0m"
         upgrade_to_version "$current_version" "$next_version"
         current_version="$next_version"
     done
+    
+    # Deactivate virtual environment
+    deactivate
 }
 
 # Execute main function with error handling

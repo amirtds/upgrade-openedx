@@ -15,10 +15,15 @@ if ! gsutil ls gs://${BUCKET_NAME} &> /dev/null; then
     exit 1
 fi
 
-# Function to list files in bucket
+# Function to list files in bucket with optional extension filter
 list_files() {
+    local extension=$1
     echo "Available files in bucket:"
-    gsutil ls gs://${BUCKET_NAME} | sed "s|gs://${BUCKET_NAME}/||"
+    if [ -n "$extension" ]; then
+        gsutil ls gs://${BUCKET_NAME}/**/*${extension} 2>/dev/null | sed "s|gs://${BUCKET_NAME}/||" || echo "No files found with ${extension} extension"
+    else
+        gsutil ls gs://${BUCKET_NAME} | sed "s|gs://${BUCKET_NAME}/||"
+    fi
 }
 
 # Function to download a file
@@ -64,7 +69,7 @@ while true; do
             list_files
             ;;
         2)
-            list_files
+            list_files ".sql"
             echo ""
             read -p "Enter the MySQL dump file name (must end with .sql, or 'q' to go back): " file_name
             if [ "$file_name" = "q" ]; then
@@ -77,7 +82,7 @@ while true; do
             download_file "$file_name"
             ;;
         3)
-            list_files
+            list_files ".tar.gz"
             echo ""
             read -p "Enter the MongoDB backup file name (must end with .tar.gz, or 'q' to go back): " file_name
             if [ "$file_name" = "q" ]; then

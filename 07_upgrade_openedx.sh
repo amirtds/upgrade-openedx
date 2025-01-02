@@ -25,30 +25,14 @@ declare -A VERSION_MAP=(
     ["redwood"]="18.1.4"
 )
 
-# Function to setup virtual environment
-setup_venv() {
-    echo -e "\n\033[1;34m>>> Setting up virtual environment\033[0m"
+# Function to install older Tutor versions (binary method)
+install_old_tutor() {
+    local version=$1
+    local tutor_version=${VERSION_MAP[$version]}
     
-    # Install python3-venv if not already installed
-    if ! dpkg -l | grep -q python3-venv; then
-        echo "Installing python3-venv..."
-        sudo apt-get update
-        sudo apt-get install -y python3-venv
-    fi
-    
-    # Create virtual environment if it doesn't exist
-    if [ ! -d "tutor-venv" ]; then
-        echo "Creating virtual environment..."
-        python3 -m venv tutor-venv
-    fi
-    
-    # Activate virtual environment
-    echo "Activating virtual environment..."
-    source tutor-venv/bin/activate
-    
-    # Upgrade pip
-    echo "Upgrading pip..."
-    pip install --upgrade pip
+    echo "Installing Tutor v$tutor_version ($version) using binary method..."
+    sudo curl -L "https://github.com/overhangio/tutor/releases/download/v$tutor_version/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
+    sudo chmod 0755 /usr/local/bin/tutor
 }
 
 # Function to upgrade to next version
@@ -59,9 +43,14 @@ upgrade_to_version() {
     
     echo -e "\n\033[1;34m>>> Upgrading from $current_version to $target_version\033[0m"
     
-    # Install new Tutor version using pip
-    echo "Installing Tutor version $tutor_version..."
-    pip install "tutor[full]==$tutor_version"
+    # Install Tutor based on version
+    if [ "$target_version" = "juniper" ] || [ "$target_version" = "koa" ]; then
+        install_old_tutor "$target_version"
+    else
+        echo "Installing Tutor version $tutor_version using pip..."
+        sudo pip3 install "tutor[full]==$tutor_version"
+    fi
+
     if [ $? -ne 0 ]; then
         echo "Failed to install Tutor version $tutor_version"
         exit 1
@@ -96,9 +85,6 @@ upgrade_to_version() {
 
 # Main upgrade process
 main() {
-    # Setup virtual environment
-    setup_venv
-    
     local current_version="ironwood"
     
     for next_version in "${ORDERED_VERSIONS[@]}"; do
@@ -106,9 +92,6 @@ main() {
         upgrade_to_version "$current_version" "$next_version"
         current_version="$next_version"
     done
-    
-    # Deactivate virtual environment
-    deactivate
 }
 
 # Execute main function with error handling

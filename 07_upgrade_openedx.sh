@@ -41,7 +41,7 @@ upgrade_to_version() {
     if [ $? -ne 0 ]; then
         echo "Failed to install Tutor version $tutor_version"
         exit 1
-    }
+    fi
 
     # Run upgrade
     echo "Running upgrade process..."

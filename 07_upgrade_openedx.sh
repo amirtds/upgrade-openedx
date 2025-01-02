@@ -35,6 +35,21 @@ install_old_tutor() {
     sudo chmod 0755 /usr/local/bin/tutor
 }
 
+# Function to setup virtual environment
+setup_venv() {
+    echo -e "\n\033[1;33m=== SETTING UP VIRTUAL ENVIRONMENT ===\033[0m"
+    
+    # Install required packages
+    sudo apt update
+    sudo apt install -y python3-venv python3-pip libyaml-dev
+    
+    # Create and activate virtual environment
+    python3 -m venv /home/ubuntu/tutor-venv
+    source /home/ubuntu/tutor-venv/bin/activate
+    
+    echo -e "\n\033[1;32m=== VIRTUAL ENVIRONMENT READY ===\033[0m\n"
+}
+
 # Function to clean up Docker resources (safely)
 cleanup_docker() {
     echo -e "\n\033[1;33m=== CLEANING UP DOCKER RESOURCES (SAFELY) ===\033[0m"
@@ -68,22 +83,27 @@ upgrade_to_version() {
     
     echo -e "\n\033[1;34m>>> Upgrading from $current_version to $target_version\033[0m"
     
-    # Stop containers before upgrade
+    # Stop containers and clean up Docker resources (safely)
     echo "Stopping current containers..."
     tutor local stop
+    cleanup_docker
     
     # Install Tutor based on version
     if [ "$target_version" = "juniper" ] || [ "$target_version" = "koa" ]; then
         install_old_tutor "$target_version"
     else
         echo "Installing Tutor version $tutor_version using pip..."
-        sudo pip3 install "tutor[full]==$tutor_version"
+        pip install "tutor[full]==$tutor_version"
     fi
 
     if [ $? -ne 0 ]; then
         echo "Failed to install Tutor version $tutor_version"
         exit 1
     fi
+
+    # Save configuration before upgrade
+    echo "Saving Tutor configuration..."
+    tutor config save
 
     # Run upgrade
     echo "Running upgrade process..."
@@ -92,11 +112,17 @@ upgrade_to_version() {
     # Special handling for Nutmeg version
     if [ "$target_version" = "nutmeg" ]; then
         echo -e "\n\033[1;33m=== Running Nutmeg-specific commands ===\033[0m"
+        
+        # Run backfill commands
         echo "Running backfill_course_tabs..."
         tutor local run cms ./manage.py cms backfill_course_tabs
         
         echo "Running simulate_publish..."
         tutor local run cms ./manage.py cms simulate_publish
+
+        # Verify course versions
+        echo "Verifying course versions..."
+        tutor local run lms ./manage.py lms shell -c "from openedx.core.djangoapps.content.course_overviews.models import CourseOverview; print('Course versions:', [(c.id, c.version) for c in CourseOverview.objects.all()])"
     fi
 
     # Launch services based on version
@@ -109,6 +135,20 @@ upgrade_to_version() {
         tutor local quickstart -I
     fi
 
+    # Additional verification steps
+    if [ "$target_version" = "nutmeg" ] || [ "$target_version" = "maple" ]; then
+        echo -e "\n\033[1;33m=== Verifying database state ===\033[0m"
+        
+        # Check MySQL course versions
+        echo "Checking course versions in MySQL..."
+        tutor local run lms ./manage.py lms dbshell -c "SELECT id, version FROM course_overviews_courseoverview;"
+        
+        # Check MongoDB state
+        echo "Checking MongoDB collections..."
+        tutor local run mongodb mongo openedx --eval "db.modulestore.structures.count()"
+        tutor local run mongodb mongo cs_comments_service --eval "db.contents.count()"
+    fi
+
     echo -e "\033[1;32m>>> Successfully upgraded to $target_version\033[0m"
 }
 
@@ -116,11 +156,34 @@ upgrade_to_version() {
 main() {
     local current_version="ironwood"
     
+    # Setup virtual environment first
+    setup_venv
+    
+    # Verify system requirements
+    echo "Verifying system requirements..."
+    if ! command -v docker &> /dev/null; then
+        echo "Docker is required but not installed. Please install Docker first."
+        exit 1
+    fi
+
+    if ! command -v docker-compose &> /dev/null; then
+        echo "Docker Compose is required but not installed. Please install Docker Compose first."
+        exit 1
+    fi
+    
     for next_version in "${ORDERED_VERSIONS[@]}"; do
         echo -e "\n\033[1;35m=== Starting upgrade to $next_version ===\033[0m"
         upgrade_to_version "$current_version" "$next_version"
         current_version="$next_version"
+        
+        # Give some time for services to stabilize
+        echo "Waiting for services to stabilize..."
+        sleep 30
     done
+
+    echo -e "\n\033[1;32m=== UPGRADE PROCESS COMPLETED ===\033[0m"
+    echo "Please verify that all services are running correctly."
+    echo "You may want to run 'docker system prune' to clean up unused images and free up disk space."
 }
 
 # Execute main function with error handling

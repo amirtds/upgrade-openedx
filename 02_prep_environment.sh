@@ -1,4 +1,4 @@
-# 1 Install required packages
+# 1. Install required packages
 sudo apt update -y && sudo apt upgrade -y
 sudo apt install -y python3 python3-pip libyaml-dev python3-venv
 

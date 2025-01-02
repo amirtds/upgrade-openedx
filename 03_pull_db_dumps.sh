@@ -18,7 +18,7 @@ fi
 # Function to list files in bucket
 list_files() {
     echo "Available files in bucket:"
-    gsutil ls gs://${BUCKET_NAME}
+    gsutil ls gs://${BUCKET_NAME} | sed "s|gs://${BUCKET_NAME}/||"
 }
 
 # Function to download a file

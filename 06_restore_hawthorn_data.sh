@@ -114,7 +114,7 @@ main() {
 
     # Restore MongoDB backups
     echo "Restoring MongoDB backups..."
-    docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/openedx/'
+    docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/edxapp/'
     docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
 
     # Drop and restore MySQL database

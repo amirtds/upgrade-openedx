@@ -31,118 +31,29 @@ cleanup_docker() {
     echo -e "\n\033[1;32m=== DOCKER CLEANUP COMPLETED ===\033[0m\n"
 }
 
-# Function to validate file exists
-validate_file() {
-    local file_path=$1
-    local file_type=$2
+# Function to clean up Tutor
+cleanup_tutor() {
+    echo -e "\n\033[1;33m=== CLEANING UP TUTOR ===\033[0m"
     
-    if [ ! -f "$file_path" ]; then
-        echo "Error: $file_type file not found at $file_path"
-        return 1
+    # Remove Tutor data
+    if [ -d ~/.local/share/tutor ]; then
+        echo "Removing Tutor data..."
+        sudo rm -rf ~/.local/share/tutor
     fi
-    return 0
-}
 
-# Function to validate directory exists
-validate_directory() {
-    local dir_path=$1
-    
-    if [ ! -d "$dir_path" ]; then
-        echo "Error: Directory not found at $dir_path"
-        return 1
+    # Remove Tutor executable
+    if [ -f /usr/local/bin/tutor ]; then
+        echo "Removing Tutor executable..."
+        sudo rm -f /usr/local/bin/tutor
     fi
-    return 0
-}
 
-# Function to list and select files
-select_file() {
-    local file_type=$1
-    local extension=$2
-    local files=()
-    
-    echo -e "\nAvailable ${file_type} files:"
-    
-    # List files with numbers
-    local i=1
-    while IFS= read -r file; do
-        echo "$i) $file"
-        files+=("$file")
-        ((i++))
-    done < <(ls *.${extension} 2>/dev/null)
-    
-    if [ ${#files[@]} -eq 0 ]; then
-        echo "No ${file_type} files found in current directory"
-        return 1
-    fi
-    
-    # Get user selection
-    local selection
-    while true; do
-        read -p "Select a number (1-${#files[@]}): " selection
-        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#files[@]}" ]; then
-            break
-        fi
-        echo "Invalid selection. Please try again."
-    done
-    
-    echo "${files[$selection-1]}"
-    return 0
-}
-
-# Function to list and select mongo backup directories
-select_directory() {
-    local dirs=()
-    
-    echo -e "\nAvailable MongoDB backup directories:"
-    
-    # List directories with numbers
-    local i=1
-    while IFS= read -r dir; do
-        if [ -d "$dir" ] && [[ "$dir" == mongo_* ]]; then
-            echo "$i) $dir"
-            dirs+=("$dir")
-            ((i++))
-        fi
-    done < <(ls -d */ 2>/dev/null)
-    
-    if [ ${#dirs[@]} -eq 0 ]; then
-        echo "No MongoDB backup directories (starting with 'mongo_') found in current directory"
-        return 1
-    fi
-    
-    # Get user selection
-    local selection
-    while true; do
-        read -p "Select a number (1-${#dirs[@]}): " selection
-        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#dirs[@]}" ]; then
-            break
-        fi
-        echo "Invalid selection. Please try again."
-    done
-    
-    echo "${dirs[$selection-1]}"
-    return 0
+    echo -e "\n\033[1;32m=== TUTOR CLEANUP COMPLETED ===\033[0m\n"
 }
 
 # Main installation process
 main() {
-    # Select MySQL dump file
-    echo "Selecting MySQL dump file..."
-    mysql_dump=$(select_file "MySQL dump" ".sql")
-    if [ $? -ne 0 ]; then
-        echo "Error: No MySQL dump files found"
-        exit 1
-    fi
-    
-    # Select MongoDB backup directory
-    echo "Selecting MongoDB backup directory..."
-    mongo_backup=$(select_directory)
-    if [ $? -ne 0 ]; then
-        echo "Error: No MongoDB backup directories found"
-        exit 1
-    fi
-
-    # Clean up Docker resources
+    # Clean up Docker and Tutor
+    cleanup_tutor
     cleanup_docker
 
     # Install Tutor
@@ -157,37 +68,7 @@ main() {
     echo "Initializing Tutor..."
     tutor local quickstart -I
 
-    # Wait for containers to be ready
-    echo "Waiting for containers to be ready..."
-    sleep 10
-
-    # Get MySQL credentials from environment
-    echo "Setting up database credentials..."
-    LOCAL_TUTOR_MYSQL_ROOT_USERNAME="root"
-    LOCAL_TUTOR_MYSQL_ROOT_PASSWORD=$(tutor config printvalue MYSQL_ROOT_PASSWORD)
-    LOCAL_TUTOR_DATA_DIRECTORY="$(tutor config printroot)/data"
-
-    # Restore MySQL database
-    echo "Restoring MySQL database..."
-    docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx;\""
-    docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" < "$mysql_dump"
-
-    # Restore MongoDB
-    echo "Restoring MongoDB databases..."
-    sudo cp -R "$mongo_backup" "$LOCAL_TUTOR_DATA_DIRECTORY/mongodb/backup/"
-    docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d edxapp /data/db/backup/edxapp/'
-    docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
-
-    # Verify MySQL restore
-    echo "Verifying MySQL restore..."
-    docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -D openedx -e \"SELECT count(*) FROM auth_user;\""
-
-    # Run migrations
-    echo "Running database migrations..."
-    tutor local run lms sh -c "./manage.py lms makemigrations"
-    tutor local run lms sh -c "./manage.py lms migrate"
-
-    echo "Installation and database restoration completed!"
+    echo "Tutor Ironwood installation completed!"
 }
 
 # Execute main function with error handling

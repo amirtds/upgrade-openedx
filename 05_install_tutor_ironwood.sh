@@ -54,18 +54,93 @@ validate_directory() {
     return 0
 }
 
+# Function to list and select files
+select_file() {
+    local file_type=$1
+    local extension=$2
+    local files=()
+    
+    echo -e "\nAvailable ${file_type} files:"
+    
+    # List files with numbers
+    local i=1
+    while IFS= read -r file; do
+        echo "$i) $file"
+        files+=("$file")
+        ((i++))
+    done < <(ls *"${extension}" 2>/dev/null)
+    
+    if [ ${#files[@]} -eq 0 ]; then
+        echo "No ${file_type} files found in current directory"
+        return 1
+    fi
+    
+    # Get user selection
+    local selection
+    while true; do
+        read -p "Select a number (1-${#files[@]}): " selection
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#files[@]}" ]; then
+            break
+        fi
+        echo "Invalid selection. Please try again."
+    done
+    
+    echo "${files[$selection-1]}"
+    return 0
+}
+
+# Function to list and select directories
+select_directory() {
+    local dirs=()
+    
+    echo -e "\nAvailable MongoDB backup directories:"
+    
+    # List directories with numbers
+    local i=1
+    while IFS= read -r dir; do
+        if [ -d "$dir" ]; then
+            echo "$i) $dir"
+            dirs+=("$dir")
+            ((i++))
+        fi
+    done < <(ls -d */ 2>/dev/null)
+    
+    if [ ${#dirs[@]} -eq 0 ]; then
+        echo "No directories found in current directory"
+        return 1
+    fi
+    
+    # Get user selection
+    local selection
+    while true; do
+        read -p "Select a number (1-${#dirs[@]}): " selection
+        if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#dirs[@]}" ]; then
+            break
+        fi
+        echo "Invalid selection. Please try again."
+    done
+    
+    echo "${dirs[$selection-1]}"
+    return 0
+}
+
 # Main installation process
 main() {
-    # Get file paths from user
-    read -p "Enter the path to MySQL dump file (.sql): " mysql_dump
-    read -p "Enter the path to MongoDB backup directory: " mongo_backup
-
-    # Validate inputs
-    validate_file "$mysql_dump" "MySQL dump"
-    if [ $? -ne 0 ]; then exit 1; fi
+    # Select MySQL dump file
+    echo "Selecting MySQL dump file..."
+    mysql_dump=$(select_file "MySQL dump" ".sql")
+    if [ $? -ne 0 ]; then
+        echo "Error: No MySQL dump files found"
+        exit 1
+    fi
     
-    validate_directory "$mongo_backup"
-    if [ $? -ne 0 ]; then exit 1; fi
+    # Select MongoDB backup directory
+    echo "Selecting MongoDB backup directory..."
+    mongo_backup=$(select_directory)
+    if [ $? -ne 0 ]; then
+        echo "Error: No MongoDB backup directories found"
+        exit 1
+    fi
 
     # Clean up Docker resources
     cleanup_docker

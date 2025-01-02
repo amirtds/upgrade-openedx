@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Define OpenEdX versions and their corresponding Tutor versions
+# Define Open edX versions and their corresponding Tutor versions
 # Using an array to maintain order and an associative array for mapping
 ORDERED_VERSIONS=(
     "ironwood"
@@ -93,7 +93,7 @@ check_tvm() {
 
 # Display available versions
 display_versions() {
-    echo "Available OpenEdX versions:"
+    echo "Available Open edX versions:"
     for i in "${!ORDERED_VERSIONS[@]}"; do
         version=${ORDERED_VERSIONS[$i]}
         echo "$((i+1))) $version (Tutor v${VERSION_MAP[$version]})"
@@ -111,7 +111,7 @@ main() {
     display_versions
     
     while true; do
-        read -p "Select OpenEdX version (1-${#ORDERED_VERSIONS[@]}): " selection
+        read -p "Select Open edX version (1-${#ORDERED_VERSIONS[@]}): " selection
         
         if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le "${#ORDERED_VERSIONS[@]}" ]; then
             selected_version=${ORDERED_VERSIONS[$((selection-1))]}

@@ -12,7 +12,7 @@ select_mysql_dump() {
     if [ ${#sql_files[@]} -eq 0 ]; then
         echo "No .sql files found in current directory!"
         exit 1
-    }
+    fi
 
     for i in "${!sql_files[@]}"; do
         echo "$((i+1))) ${sql_files[$i]}"
@@ -36,7 +36,7 @@ select_mongo_dump() {
     if [ ${#mongo_dirs[@]} -eq 0 ]; then
         echo "No mongo* directories found in current directory!"
         exit 1
-    }
+    fi
 
     for i in "${!mongo_dirs[@]}"; do
         echo "$((i+1))) ${mongo_dirs[$i]}"

@@ -122,13 +122,6 @@ main() {
     docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
     docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$MYSQL_DUMP_FILE"
 
-    # Run fake migrations for problematic apps
-    echo "Running fake migrations for specific apps..."
-    tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0001 --fake"
-    tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0003 --fake"
-    tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0001 --fake"
-    tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0003 --fake"
-
     # Run remaining migrations
     echo "Running remaining migrations..."
     tutor local run lms sh -c "python manage.py lms migrate"

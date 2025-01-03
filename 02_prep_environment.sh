@@ -24,3 +24,6 @@ echo \
 # 5. Install Docker
 sudo apt-get update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose
+
+# 6. install TVM
+pip install git+https://github.com/eduNEXT/tvm.git

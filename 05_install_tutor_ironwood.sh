@@ -60,9 +60,6 @@ main() {
     echo "Installing Tutor v3.12.6 (Ironwood)..."
     sudo curl -L "https://github.com/overhangio/tutor/releases/download/v3.12.6/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
     sudo chmod 0755 /usr/local/bin/tutor
-    
-    # Set proper permissions
-    sudo chown -R $USER:$USER ~/.local/share/tutor
 
     # Initialize Tutor
     echo "Initializing Tutor..."

@@ -82,10 +82,10 @@ cleanup_tutor() {
     echo -e "\n\033[1;32m=== TUTOR CLEANUP COMPLETED ===\033[0m\n"
 }
 
-# 1. Export Juniper DB
+# 1. Export Koa DB
 # -------------------------------
-## Create export directory for Juniper
-EXPORT_DIR="juniper_export"
+## Create export directory for Koa
+EXPORT_DIR="koa_export"
 echo -e "${BLUE}Creating export directory: $EXPORT_DIR${NC}"
 mkdir -p "$EXPORT_DIR"
 
@@ -103,21 +103,21 @@ echo -e "${BLUE}Export completed successfully!${NC}"
 echo -e "${BLUE}Files are stored in: $EXPORT_DIR${NC}"
 
 
-# 2. Install Koa and import Juniper DB
+# 2. Install Lilac and import Koa DB
 # -------------------------------
 
 # Clean up Docker and Tutor
 cleanup_docker
 cleanup_tutor
 
-## Install Koa
-sudo curl -L "https://github.com/overhangio/tutor/releases/download/v11.3.1/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
+## Install Lilac
+sudo curl -L "https://github.com/overhangio/tutor/releases/download/v12.2.0/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
 sudo chmod 0755 /usr/local/bin/tutor
 
-echo -e "${BLUE}Installing Tutor v11.3.1 (Koa)...${NC}"
+echo -e "${BLUE}Installing Tutor v12.2.0 (Lilac)...${NC}"
 tutor local quickstart -I
 
-echo -e "${BLUE}Tutor Koa installation completed!${NC}"
+echo -e "${BLUE}Tutor Lilac installation completed!${NC}"
 
 # Set environment variables
 export LOCAL_TUTOR_DATA_DIRECTORY="$(tutor config printroot)/data"
@@ -125,8 +125,8 @@ export LOCAL_TUTOR_MYSQL_ROOT_PASSWORD=$(tutor config printvalue MYSQL_ROOT_PASS
 export LOCAL_TUTOR_MYSQL_ROOT_USERNAME=$(tutor config printvalue MYSQL_ROOT_USERNAME)
 
 
-## Import Juniper DB
-echo -e "${BLUE}Importing Juniper DB...${NC}"
+## Import Koa DB
+echo -e "${BLUE}Importing Koa DB...${NC}"
 
 # Copy MongoDB backup
 echo -e "${BLUE}Copying MongoDB backup...${NC}"

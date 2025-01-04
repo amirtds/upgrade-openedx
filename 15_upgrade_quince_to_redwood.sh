@@ -146,7 +146,29 @@ docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d cs_comme
 # Drop and restore MySQL database
 echo -e "${BLUE}Restoring MySQL database...${NC}"
 docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
-docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$EXPORT_DIR/openedx.sql"
+
+# Set MySQL parameters before import
+docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    -e "SET GLOBAL max_allowed_packet=1073741824; \
+        SET GLOBAL net_buffer_length=1048576; \
+        SET GLOBAL innodb_buffer_pool_size=8589934592; \
+        SET GLOBAL foreign_key_checks=0;"
+
+# Import with progress bar
+echo -e "${BLUE}Importing database (this may take a while)...${NC}"
+pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    --init-command="SET SESSION foreign_key_checks=0;" \
+    openedx
+
+# Reset MySQL parameters after import
+docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    -e "SET GLOBAL foreign_key_checks=1;"
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"

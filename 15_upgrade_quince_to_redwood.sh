@@ -82,10 +82,10 @@ cleanup_tutor() {
     echo -e "\n\033[1;32m=== TUTOR CLEANUP COMPLETED ===\033[0m\n"
 }
 
-# 1. Export Palm DB
+# 1. Export Quince DB
 # -------------------------------
-## Create export directory for Palm
-EXPORT_DIR="palm_export"
+## Create export directory for Quince
+EXPORT_DIR="quince_export"
 echo -e "${BLUE}Creating export directory: $EXPORT_DIR${NC}"
 mkdir -p "$EXPORT_DIR"
 
@@ -103,21 +103,21 @@ echo -e "${BLUE}Export completed successfully!${NC}"
 echo -e "${BLUE}Files are stored in: $EXPORT_DIR${NC}"
 
 
-# 2. Install Quince and import Palm DB
+# 2. Install Redwood and import Quince DB
 # -------------------------------
 
 # Clean up Docker and Tutor
 cleanup_docker
 cleanup_tutor
 
-## Install Quince
-sudo curl -L "https://github.com/overhangio/tutor/releases/download/v17.0.6/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
+## Install Redwood
+sudo curl -L "https://github.com/overhangio/tutor/releases/download/v18.1.4/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
 sudo chmod 0755 /usr/local/bin/tutor
 
-echo -e "${BLUE}Installing Tutor v17.0.6 (Quince)...${NC}"
+echo -e "${BLUE}Installing Tutor v18.1.4 (Redwood)...${NC}"
 tutor local launch -I
 
-echo -e "${BLUE}Tutor Quince installation completed!${NC}"
+echo -e "${BLUE}Tutor Redwood installation completed!${NC}"
 
 # Set environment variables
 export LOCAL_TUTOR_DATA_DIRECTORY="$(tutor config printroot)/data"
@@ -125,8 +125,8 @@ export LOCAL_TUTOR_MYSQL_ROOT_PASSWORD=$(tutor config printvalue MYSQL_ROOT_PASS
 export LOCAL_TUTOR_MYSQL_ROOT_USERNAME=$(tutor config printvalue MYSQL_ROOT_USERNAME)
 
 
-## Import Palm DB
-echo -e "${BLUE}Importing Palm DB...${NC}"
+## Import Quince DB
+echo -e "${BLUE}Importing Quince DB...${NC}"
 
 # Copy MongoDB backup
 echo -e "${BLUE}Copying MongoDB backup...${NC}"
@@ -147,10 +147,6 @@ docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d cs_comme
 echo -e "${BLUE}Restoring MySQL database...${NC}"
 docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
 docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$EXPORT_DIR/openedx.sql"
-
-# Fake migrations
-echo -e "${BLUE}Faking migrations...${NC}"
-tutor local run lms sh -c "python manage.py lms migrate oauth2_provider 0004 --fake"
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"

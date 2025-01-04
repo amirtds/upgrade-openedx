@@ -82,10 +82,10 @@ cleanup_tutor() {
     echo -e "\n\033[1;32m=== TUTOR CLEANUP COMPLETED ===\033[0m\n"
 }
 
-# 1. Export Lilac DB
+# 1. Export Nutmeg DB
 # -------------------------------
-## Create export directory for Lilac
-EXPORT_DIR="lilac_export"
+## Create export directory for Nutmeg
+EXPORT_DIR="nutmeg_export"
 echo -e "${BLUE}Creating export directory: $EXPORT_DIR${NC}"
 mkdir -p "$EXPORT_DIR"
 
@@ -103,21 +103,21 @@ echo -e "${BLUE}Export completed successfully!${NC}"
 echo -e "${BLUE}Files are stored in: $EXPORT_DIR${NC}"
 
 
-# 2. Install Maple and import Lilac DB
+# 2. Install Olive and import Nutmeg DB
 # -------------------------------
 
 # Clean up Docker and Tutor
 cleanup_docker
 cleanup_tutor
 
-## Install Maple
-sudo curl -L "https://github.com/overhangio/tutor/releases/download/v13.3.1/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
+## Install Nutmeg
+sudo curl -L "https://github.com/overhangio/tutor/releases/download/v15.3.7/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
 sudo chmod 0755 /usr/local/bin/tutor
 
-echo -e "${BLUE}Installing Tutor v13.3.1 (Maple)...${NC}"
-tutor local quickstart -I
+echo -e "${BLUE}Installing Tutor v15.3.7 (Nutmeg)...${NC}"
+tutor local launch -I
 
-echo -e "${BLUE}Tutor Maple installation completed!${NC}"
+echo -e "${BLUE}Tutor Nutmeg installation completed!${NC}"
 
 # Set environment variables
 export LOCAL_TUTOR_DATA_DIRECTORY="$(tutor config printroot)/data"
@@ -125,8 +125,8 @@ export LOCAL_TUTOR_MYSQL_ROOT_PASSWORD=$(tutor config printvalue MYSQL_ROOT_PASS
 export LOCAL_TUTOR_MYSQL_ROOT_USERNAME=$(tutor config printvalue MYSQL_ROOT_USERNAME)
 
 
-## Import Lilac DB
-echo -e "${BLUE}Importing Lilac DB...${NC}"
+## Import Nutmeg DB
+echo -e "${BLUE}Importing Nutmeg DB...${NC}"
 
 # Copy MongoDB backup
 echo -e "${BLUE}Copying MongoDB backup...${NC}"
@@ -147,10 +147,6 @@ docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d cs_comme
 echo -e "${BLUE}Restoring MySQL database...${NC}"
 docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
 docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$EXPORT_DIR/openedx.sql"
-
-# Fake migrations
-echo -e "${BLUE}Faking migrations...${NC}"
-tutor local run lms sh -c "python manage.py lms migrate course_home_api 0001 --fake"
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"

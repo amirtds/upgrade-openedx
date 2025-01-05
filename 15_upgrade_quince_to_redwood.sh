@@ -170,10 +170,73 @@ docker exec -i tutor_local-mysql-1 mysql \
     -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
     -e "SET GLOBAL foreign_key_checks=1;"
 
+# Fake migrations
+echo -e "${BLUE}Faking migrations...${NC}"
+oauth2_provider_application
+tutor local run lms sh -c "python manage.py lms migrate integrated_channel 0030 --fake"
+tutor local run lms sh -c "python manage.py lms migrate badges 0005 --fake"
+tutor local run lms sh -c "python manage.py lms migrate enterprise 0200 --fake"
+
+docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    openedx -e "SET FOREIGN_KEY_CHECKS=0; 
+                DROP TABLE IF EXISTS oauth2_provider_accesstoken; 
+                DROP TABLE IF EXISTS oauth2_provider_application;
+                DROP TABLE IF EXISTS oauth2_provider_grant;
+                DROP TABLE IF EXISTS oauth2_provider_refreshtoken;
+                DROP TABLE IF EXISTS oauth_dispatch_restrictedapplication;
+                DROP TABLE IF EXISTS oauth_dispatch_applicationaccess;
+                DROP TABLE IF EXISTS oauth_dispatch_applicationorganization;
+                SET FOREIGN_KEY_CHECKS=1;"
+
+docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    openedx -e "DELETE FROM django_migrations WHERE app IN ('oauth2_provider', 'oauth_dispatch');"
+
+tutor local run lms sh -c "python manage.py lms migrate oauth_dispatch zero --fake"
+tutor local run lms sh -c "python manage.py lms migrate oauth2_provider zero --fake"
+tutor local run lms sh -c "python manage.py lms migrate oauth2_provider"
+tutor local run lms sh -c "python manage.py lms migrate oauth_dispatch"
+
+
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"
 tutor local run lms sh -c "python manage.py lms migrate"
 tutor local run cms sh -c "python manage.py cms migrate"
+
+# Create Login Service Account
+echo "${BLUE}Creating Login Service Account...${NC}"
+tutor local run lms sh -c "python manage.py lms shell -c '
+from django.contrib.auth import get_user_model
+from oauth2_provider.models import Application
+from django.conf import settings
+
+User = get_user_model()
+
+# Create login service user
+username = \"login_service_user\"
+email = username + \"@fake.email\"
+user, created = User.objects.get_or_create(username=username, email=email)
+if created:
+    user.set_unusable_password()
+    user.save()
+
+# Create OAuth application
+app, created = Application.objects.get_or_create(
+    name=\"Login Service for JWT Cookies\",
+    client_id=\"login_service_user\",
+    user=user,
+    defaults={
+        \"client_type\": \"public\",
+        \"authorization_grant_type\": \"password\",
+        \"redirect_uris\": \"\",
+        \"client_secret\": \"login_service_user\"
+    }
+)
+print(\"Login service user and application created successfully\")
+'"
 
 # Run additional CMS commands
 echo -e "${BLUE}Running CMS commands...${NC}"

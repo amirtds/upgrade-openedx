@@ -58,11 +58,11 @@ verify_mysql_data() {
     echo "Verifying MySQL data..."
     
     # Check user count
-    user_count=$(docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx -e 'SELECT COUNT(*) as count FROM auth_user;'" | grep -v count)
+    user_count=$(docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx -e 'SELECT COUNT(*) as count FROM auth_user;'" | grep -v count)
     echo "Total users found: $user_count"
     
     # Check course count
-    course_count=$(docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx -e 'SELECT COUNT(*) as count FROM course_overviews_courseoverview;'" | grep -v count)
+    course_count=$(docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx -e 'SELECT COUNT(*) as count FROM course_overviews_courseoverview;'" | grep -v count)
     echo "Total courses found: $course_count"
     
     if [ "$user_count" -eq "0" ] || [ "$course_count" -eq "0" ]; then
@@ -77,11 +77,11 @@ verify_mongo_data() {
     echo "Verifying MongoDB data..."
     
     # Check modulestore count
-    modulestore_count=$(docker exec -i tutor_local-mongodb-1 sh -c 'echo "db.modulestore.structures.count()" | mongo openedx --quiet')
+    modulestore_count=$(docker exec -i tutor_local_mongodb_1 sh -c 'echo "db.modulestore.structures.count()" | mongo openedx --quiet')
     echo "Modulestore structures found: $modulestore_count"
     
     # Check forum count
-    forum_count=$(docker exec -i tutor_local-mongodb-1 sh -c 'echo "db.contents.count()" | mongo cs_comments_service --quiet')
+    forum_count=$(docker exec -i tutor_local_mongodb_1 sh -c 'echo "db.contents.count()" | mongo cs_comments_service --quiet')
     echo "Forum contents found: $forum_count"
     
     if [ "$modulestore_count" -eq "0" ] || [ "$forum_count" -eq "0" ]; then
@@ -114,16 +114,16 @@ main() {
 
     # Restore MongoDB backups
     echo "Restoring MongoDB backups..."
-    docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/edxapp/'
-    docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
+    docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/edxapp/'
+    docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
 
     # Drop and restore MySQL database
     echo "Restoring MySQL database..."
-    docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
+    docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
 
     # Import with progress bar
     echo "Importing database (this may take a while)..."
-    pv -s $(stat --format=%s "$MYSQL_DUMP_FILE") "$MYSQL_DUMP_FILE" | docker exec -i tutor_local-mysql-1 mysql \
+    pv -s $(stat --format=%s "$MYSQL_DUMP_FILE") "$MYSQL_DUMP_FILE" | docker exec -i tutor_local_mysql_1 mysql \
         -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
         -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
         --init-command="SET SESSION foreign_key_checks=0;" \

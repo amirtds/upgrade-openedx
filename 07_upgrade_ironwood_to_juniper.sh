@@ -146,10 +146,14 @@ docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_U
 
 # Run fake migrations for problematic apps
 echo "Running fake migrations for specific apps..."
-tutor local run lms sh -c "python manage.py lms migrate content_type_gating --fake"
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0006 --fake"
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0007 --fake"
 tutor local run lms sh -c "python manage.py lms migrate course_date_signals 0001 --fake"
 tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0001 --fake"
 tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0003 --fake"
+tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0006 --fake"
+tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0007 --fake"
+
 tutor local run lms sh -c "python manage.py lms migrate discounts 0001 --fake"
 tutor local run lms sh -c "python manage.py lms migrate discounts 0002 --fake"
 tutor local run lms sh -c "python manage.py lms migrate thumbnail 0001 --fake"

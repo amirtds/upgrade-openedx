@@ -120,7 +120,15 @@ main() {
     # Drop and restore MySQL database
     echo "Restoring MySQL database..."
     docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
-    docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$MYSQL_DUMP_FILE"
+
+    # Import with progress bar
+    echo "Importing database (this may take a while)..."
+    pv -s $(stat --format=%s "$MYSQL_DUMP_FILE") "$MYSQL_DUMP_FILE" | docker exec -i tutor_local-mysql-1 mysql \
+        -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+        -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+        --init-command="SET SESSION foreign_key_checks=0;" \
+        openedx
+
     # Run remaining migrations
     echo "Running remaining migrations..."
     tutor local run lms sh -c "python manage.py lms migrate"

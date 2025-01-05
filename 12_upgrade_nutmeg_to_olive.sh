@@ -146,7 +146,14 @@ docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d cs_comme
 # Drop and restore MySQL database
 echo -e "${BLUE}Restoring MySQL database...${NC}"
 docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
-docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$EXPORT_DIR/openedx.sql"
+
+# Import with progress bar
+echo -e "${BLUE}Importing database (this may take a while)...${NC}"
+pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    --init-command="SET SESSION foreign_key_checks=0;" \
+    openedx
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"

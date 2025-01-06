@@ -158,6 +158,7 @@ pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | 
 # Fake migrations
 echo -e "${BLUE}Faking migrations...${NC}"
 tutor local run lms sh -c "python manage.py lms migrate discussions 0002 --fake"
+tutor local run lms sh -c "python manage.py lms migrate course_overviews 0024 --fake"
 
 
 # Run remaining migrations

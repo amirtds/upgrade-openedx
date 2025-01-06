@@ -140,12 +140,20 @@ docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d openedx 
 docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
 
 # Drop and restore MySQL database
-echo "Restoring MySQL database..."
+echo -e "${BLUE}Restoring MySQL database...${NC}"
 docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
-docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD openedx" < "$EXPORT_DIR/openedx.sql"
+
+# Import with progress bar
+echo -e "${BLUE}Importing database (this may take a while)...${NC}"
+pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | docker exec -i tutor_local_mysql_1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    --init-command="SET SESSION foreign_key_checks=0;" \
+    openedx
 
 # Run fake migrations for problematic apps
 echo "Running fake migrations for specific apps..."
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0001 --fake"
 tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0006 --fake"
 tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0007 --fake"
 tutor local run lms sh -c "python manage.py lms migrate course_date_signals 0001 --fake"

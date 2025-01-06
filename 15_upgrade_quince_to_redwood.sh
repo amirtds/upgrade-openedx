@@ -21,7 +21,7 @@ declare -A VERSION_MAP=(
     ["olive"]="15.3.7"
     ["palm"]="16.1.8"
     ["quince"]="17.0.6"
-    ["redwood"]="18.1.4"
+    ["redwood"]="18.2.2"
 )
 
 # Set environment variables
@@ -111,10 +111,10 @@ cleanup_docker
 cleanup_tutor
 
 ## Install Redwood
-sudo curl -L "https://github.com/overhangio/tutor/releases/download/v18.1.4/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
+sudo curl -L "https://github.com/overhangio/tutor/releases/download/v18.2.2/tutor-$(uname -s)_$(uname -m)" -o /usr/local/bin/tutor
 sudo chmod 0755 /usr/local/bin/tutor
 
-echo -e "${BLUE}Installing Tutor v18.1.4 (Redwood)...${NC}"
+echo -e "${BLUE}Installing Tutor v18.2.2 (Redwood)...${NC}"
 tutor local launch -I
 
 echo -e "${BLUE}Tutor Redwood installation completed!${NC}"

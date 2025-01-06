@@ -153,6 +153,11 @@ pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | 
 
 # Run fake migrations for problematic apps
 echo "Running fake migrations for specific apps..."
+# TO prevent migration error for 0001 lets run on the next dry run.
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating zero --fake"
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating --fake-initial"
+tutor local run lms sh -c "python manage.py lms migrate content_type_gating"
+
 tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0001 --fake"
 tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0006 --fake"
 tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0007 --fake"
@@ -168,9 +173,7 @@ tutor local run lms sh -c "python manage.py lms migrate thumbnail 0001 --fake"
 tutor local run lms sh -c "python manage.py lms migrate track 0002 --fake"
 tutor local run lms sh -c "python manage.py lms migrate user_authn 0001 --fake"
 
-tutor local run lms sh -c "python manage.py lms migrate content_type_gating zero --fake"
-tutor local run lms sh -c "python manage.py lms migrate content_type_gating --fake-initial"
-tutor local run lms sh -c "python manage.py lms migrate content_type_gating"
+
 
 # Run remaining migrations
 echo "Running migrations..."

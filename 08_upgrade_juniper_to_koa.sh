@@ -162,7 +162,7 @@ tutor local run cms sh -c "python manage.py cms migrate"
 
 # Run additional CMS commands
 echo -e "${BLUE}Running CMS commands...${NC}"
-tutor local run cms sh -c "./manage.py cms reindex_course --all-courses"
+tutor local run cms sh -c "./manage.py cms reindex_course --all"
 tutor local run cms sh -c "./manage.py cms simulate_publish"
 tutor local run cms sh -c "./manage.py cms generate_course_overview --all-courses"
 

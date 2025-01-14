@@ -24,31 +24,3 @@ echo \
 # 5. Install Docker
 sudo apt-get update
 sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose
-
-# 6. Configure Docker daemon resources
-sudo mkdir -p /etc/docker
-cat << EOF | sudo tee /etc/docker/daemon.json
-{
-    "default-cpu-shares": 8192,
-    "default-memory": "24g",
-    "default-memory-swap": "26g",
-    "default-ulimits": {
-        "nofile": {
-            "Name": "nofile",
-            "Hard": 64000,
-            "Soft": 64000
-        }
-    }
-}
-EOF
-
-# 7. Restart Docker to apply changes
-sudo systemctl restart docker
-
-# 8. Add current user to docker group
-sudo usermod -aG docker $USER
-newgrp docker
-
-# 9. Verify Docker configuration
-echo "Docker configuration:"
-docker info | grep -A 1 "CPU|Memory"

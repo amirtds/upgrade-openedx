@@ -157,7 +157,7 @@ pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | 
 
 # Fake migrations
 echo -e "${BLUE}Faking migrations...${NC}"
-tutor local run lms sh -c "python manage.py lms migrate oauth2_provider 0004 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate oauth2_provider 0004 --fake"
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"
@@ -166,7 +166,6 @@ tutor local run cms sh -c "python manage.py cms migrate"
 
 # Run additional CMS commands
 echo -e "${BLUE}Running CMS commands...${NC}"
-tutor local run cms sh -c "./manage.py cms reindex_course --all"
 tutor local run cms sh -c "./manage.py cms simulate_publish"
 tutor local run cms sh -c "./manage.py cms generate_course_overview --all-courses"
 

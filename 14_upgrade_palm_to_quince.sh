@@ -155,10 +155,6 @@ pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | 
     --init-command="SET SESSION foreign_key_checks=0;" \
     openedx
 
-# Fake migrations
-echo -e "${BLUE}Faking migrations...${NC}"
-# tutor local run lms sh -c "python manage.py lms migrate oauth2_provider 0004 --fake"
-
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"
 tutor local run lms sh -c "python manage.py lms migrate"

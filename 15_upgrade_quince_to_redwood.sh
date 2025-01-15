@@ -172,39 +172,36 @@ docker exec -i tutor_local-mysql-1 mysql \
 
 # # Fake migrations
 # echo -e "${BLUE}Faking migrations...${NC}"
-# oauth2_provider_application
-# tutor local run lms sh -c "python manage.py lms migrate integrated_channel 0030 --fake"
-# tutor local run lms sh -c "python manage.py lms migrate badges 0005 --fake"
-# tutor local run lms sh -c "python manage.py lms migrate enterprise 0200 --fake"
-
-# docker exec -i tutor_local-mysql-1 mysql \
-#     -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
-#     -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
-#     openedx -e "SET FOREIGN_KEY_CHECKS=0; 
-#                 DROP TABLE IF EXISTS oauth2_provider_accesstoken; 
-#                 DROP TABLE IF EXISTS oauth2_provider_application;
-#                 DROP TABLE IF EXISTS oauth2_provider_grant;
-#                 DROP TABLE IF EXISTS oauth2_provider_refreshtoken;
-#                 DROP TABLE IF EXISTS oauth_dispatch_restrictedapplication;
-#                 DROP TABLE IF EXISTS oauth_dispatch_applicationaccess;
-#                 DROP TABLE IF EXISTS oauth_dispatch_applicationorganization;
-#                 SET FOREIGN_KEY_CHECKS=1;"
-
-# docker exec -i tutor_local-mysql-1 mysql \
-#     -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
-#     -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
-#     openedx -e "DELETE FROM django_migrations WHERE app IN ('oauth2_provider', 'oauth_dispatch');"
-
-# tutor local run lms sh -c "python manage.py lms migrate oauth_dispatch zero --fake"
-# tutor local run lms sh -c "python manage.py lms migrate oauth2_provider zero --fake"
-# tutor local run lms sh -c "python manage.py lms migrate oauth2_provider"
-# tutor local run lms sh -c "python manage.py lms migrate oauth_dispatch"
-
+tutor local run lms sh -c "python manage.py lms migrate integrated_channel 0030 --fake"
+tutor local run lms sh -c "python manage.py lms migrate badges 0005 --fake"
+tutor local run lms sh -c "python manage.py lms migrate enterprise 0200 --fake"
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"
 tutor local run lms sh -c "python manage.py lms migrate"
 tutor local run cms sh -c "python manage.py cms migrate"
+
+# Create site configuration
+echo "Creating site configuration..."
+tutor local run lms sh -c "python manage.py lms shell -c \"
+from django.contrib.sites.models import Site
+from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
+
+# Create or get the site
+site, _ = Site.objects.get_or_create(
+    domain='thegymnasium.com',
+    defaults={'name': 'The Gymnasium'}
+)
+
+# Create or update site configuration
+config, _ = SiteConfiguration.objects.update_or_create(
+    site=site,
+    defaults={
+        'enabled': True,
+    }
+)
+print('Site configuration created/updated successfully')
+\""
 
 # Create Login Service Account
 echo "${BLUE}Creating Login Service Account...${NC}"
@@ -237,6 +234,38 @@ app, created = Application.objects.get_or_create(
 )
 print(\"Login service user and application created successfully\")
 '"
+
+# Create content type gating table
+echo "${BLUE}Creating content type gating table...${NC}"
+docker exec -i tutor_local-mysql-1 mysql \
+    -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
+    -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
+    openedx << 'EOF'
+
+CREATE TABLE IF NOT EXISTS content_type_gating_contenttypegatingconfig (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    change_date datetime(6) NOT NULL,
+    enabled tinyint(1) NOT NULL,
+    enabled_as_of datetime(6) DEFAULT NULL,
+    studio_override_enabled tinyint(1) NOT NULL,
+    org varchar(255) DEFAULT NULL,
+    org_course varchar(255) DEFAULT NULL,
+    changed_by_id int(11) DEFAULT NULL,
+    course_id varchar(255) DEFAULT NULL,
+    site_id int(11) DEFAULT NULL,
+    PRIMARY KEY (id),
+    KEY content_type_gating_co_changed_by_id_e1754c4b_fk_auth_user_id (changed_by_id),
+    KEY content_type_gating_co_site_id_c9f3bc6a_fk_django_si (site_id),
+    KEY content_type_gating_contenttypegatingconfig_org_043e72a9 (org),
+    KEY content_type_gating_contenttypegatingconfig_org_course_e0a64a09 (org_course),
+    KEY content_type_gating_contenttypegatingconfig_course_id_f16cc868 (course_id),
+    CONSTRAINT content_type_gating_co_changed_by_id_e1754c4b_fk_auth_user_id FOREIGN KEY (changed_by_id) REFERENCES auth_user (id),
+    CONSTRAINT content_type_gating_co_site_id_c9f3bc6a_fk_django_si FOREIGN KEY (site_id) REFERENCES django_site (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+EOF
+
+echo "${BLUE}Content type gating table created and configured successfully${NC}"
 
 # Run additional CMS commands
 echo -e "${BLUE}Running CMS commands...${NC}"

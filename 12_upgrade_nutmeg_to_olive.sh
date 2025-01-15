@@ -91,13 +91,13 @@ mkdir -p "$EXPORT_DIR"
 
 ## Export MySQL databases
 echo -e "${BLUE}Exporting MySQL databases...${NC}"
-docker exec -i tutor_local-mysql-1 mysqldump -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" --databases openedx > "$EXPORT_DIR/openedx.sql"
+docker exec -i tutor_local_mysql_1 mysqldump -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" --databases openedx > "$EXPORT_DIR/openedx.sql"
 
 ## Export MongoDB databases
 echo -e "${BLUE}Exporting MongoDB databases...${NC}"
-docker exec -i tutor_local-mongodb-1 mongodump --out=/data/db/dump/
-docker exec -i tutor_local-mongodb-1 bash -c "cd /data/db/dump && tar czf /data/db/mongodb_dump.tar.gz ."
-docker cp tutor_local-mongodb-1:/data/db/mongodb_dump.tar.gz "$EXPORT_DIR/"
+docker exec -i tutor_local_mongodb_1 mongodump --out=/data/db/dump/
+docker exec -i tutor_local_mongodb_1 bash -c "cd /data/db/dump && tar czf /data/db/mongodb_dump.tar.gz ."
+docker cp tutor_local_mongodb_1:/data/db/mongodb_dump.tar.gz "$EXPORT_DIR/"
 
 echo -e "${BLUE}Export completed successfully!${NC}"
 echo -e "${BLUE}Files are stored in: $EXPORT_DIR${NC}"
@@ -140,16 +140,16 @@ sudo tar -xzf "$MONGO_BACKUP_DIR/mongodb_dump.tar.gz" -C "$MONGO_BACKUP_DIR"
 
 # Restore MongoDB backups
 echo -e "${BLUE}Restoring MongoDB backups...${NC}"
-docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/openedx/'
-docker exec -i tutor_local-mongodb-1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
+docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d openedx /data/db/backup/openedx/'
+docker exec -i tutor_local_mongodb_1 sh -c 'exec mongorestore --drop -d cs_comments_service /data/db/backup/cs_comments_service/'
 
 # Drop and restore MySQL database
 echo -e "${BLUE}Restoring MySQL database...${NC}"
-docker exec -i tutor_local-mysql-1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
+docker exec -i tutor_local_mysql_1 sh -c "exec mysql -u$LOCAL_TUTOR_MYSQL_ROOT_USERNAME -p$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD -e \"DROP DATABASE IF EXISTS openedx; CREATE DATABASE openedx;\""
 
 # Import with progress bar
 echo -e "${BLUE}Importing database (this may take a while)...${NC}"
-pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | docker exec -i tutor_local-mysql-1 mysql \
+pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | docker exec -i tutor_local_mysql_1 mysql \
     -u"$LOCAL_TUTOR_MYSQL_ROOT_USERNAME" \
     -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" \
     --init-command="SET SESSION foreign_key_checks=0;" \
@@ -171,13 +171,13 @@ echo -e "\n${BLUE}=== VERIFYING DATA RESTORATION ===${NC}"
 
 # Get MySQL counts
 mysql_status=0
-user_count=$(docker exec -i tutor_local-mysql-1 mysql -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM openedx.auth_user;" 2>/dev/null) || mysql_status=$?
-course_count=$(docker exec -i tutor_local-mysql-1 mysql -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM openedx.course_overviews_courseoverview;" 2>/dev/null) || mysql_status=$?
+user_count=$(docker exec -i tutor_local_mysql_1 mysql -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM openedx.auth_user;" 2>/dev/null) || mysql_status=$?
+course_count=$(docker exec -i tutor_local_mysql_1 mysql -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM openedx.course_overviews_courseoverview;" 2>/dev/null) || mysql_status=$?
 
 # Get MongoDB counts
 mongo_status=0
-modulestore_count=$(docker exec -i tutor_local-mongodb-1 mongo openedx --quiet --eval "db.modulestore.active_versions.count()" 2>/dev/null) || mongo_status=$?
-forum_count=$(docker exec -i tutor_local-mongodb-1 mongo cs_comments_service --quiet --eval "db.contents.count()" 2>/dev/null) || mongo_status=$?
+modulestore_count=$(docker exec -i tutor_local_mongodb_1 mongo openedx --quiet --eval "db.modulestore.active_versions.count()" 2>/dev/null) || mongo_status=$?
+forum_count=$(docker exec -i tutor_local_mongodb_1 mongo cs_comments_service --quiet --eval "db.contents.count()" 2>/dev/null) || mongo_status=$?
 
 # Display results
 if [ $mysql_status -eq 0 ] && [ $mongo_status -eq 0 ]; then

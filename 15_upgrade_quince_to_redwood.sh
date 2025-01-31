@@ -171,10 +171,10 @@ docker exec -i tutor_local-mysql-1 mysql \
     -e "SET GLOBAL foreign_key_checks=1;"
 
 # # Fake migrations
-# echo -e "${BLUE}Faking migrations...${NC}"
-tutor local run lms sh -c "python manage.py lms migrate integrated_channel 0030 --fake"
-tutor local run lms sh -c "python manage.py lms migrate badges 0005 --fake"
-tutor local run lms sh -c "python manage.py lms migrate enterprise 0200 --fake"
+echo -e "${BLUE}Faking migrations...${NC}"
+# tutor local run lms sh -c "python manage.py lms migrate integrated_channel 0030 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate badges 0005 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate enterprise 0200 --fake"
 
 # Run remaining migrations
 echo -e "${BLUE}Running migrations...${NC}"

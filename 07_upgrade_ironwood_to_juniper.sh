@@ -154,14 +154,14 @@ pv -s $(stat --format=%s "$EXPORT_DIR/openedx.sql") "$EXPORT_DIR/openedx.sql" | 
 # Run fake migrations for problematic apps
 echo "Running fake migrations for specific apps..."
 
-tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0006 --fake"
-tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0007 --fake"
-tutor local run lms sh -c "python manage.py lms migrate course_date_signals 0001 --fake"
-tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0006 --fake"
-tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0007 --fake"
-tutor local run lms sh -c "python manage.py lms migrate discounts 0001 --fake"
-tutor local run lms sh -c "python manage.py lms migrate discounts 0002 --fake"
-tutor local run lms sh -c "python manage.py lms migrate thumbnail 0001 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0006 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate content_type_gating 0007 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate course_date_signals 0001 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0006 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate course_duration_limits 0007 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate discounts 0001 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate discounts 0002 --fake"
+# tutor local run lms sh -c "python manage.py lms migrate thumbnail 0001 --fake"
 
 
 # Run remaining migrations

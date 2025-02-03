@@ -95,9 +95,9 @@ docker exec -i tutor_local_mysql_1 mysqldump -u root -p"$LOCAL_TUTOR_MYSQL_ROOT_
 
 ## Export MongoDB databases
 echo -e "${BLUE}Exporting MongoDB databases...${NC}"
-docker exec -i tutor_local-mongodb-1 mongodump --out=/data/db/dump/
-docker exec -i tutor_local-mongodb-1 bash -c "cd /data/db/dump && tar czf /data/db/mongodb_dump.tar.gz ."
-docker cp tutor_local-mongodb-1:/data/db/mongodb_dump.tar.gz "$EXPORT_DIR/"
+docker exec -i tutor_local_mongodb_1 mongodump --out=/data/db/dump/
+docker exec -i tutor_local_mongodb_1 bash -c "cd /data/db/dump && tar czf /data/db/mongodb_dump.tar.gz ."
+docker cp tutor_local_mongodb_1:/data/db/mongodb_dump.tar.gz "$EXPORT_DIR/"
 
 echo -e "${BLUE}Export completed successfully!${NC}"
 echo -e "${BLUE}Files are stored in: $EXPORT_DIR${NC}"
